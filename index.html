@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一次関数のグラフ 2択クイズ</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
+    background: #f5f7f5;
+    color: #1a1a1a;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+  #quiz-app { width: 100%; max-width: 620px; }
+  h1 {
+    font-size: 20px;
+    font-weight: 500;
+    color: #085041;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #1D9E75;
+  }
+  .progress-bar { height: 4px; background: #d0e8e0; border-radius: 2px; margin-bottom: 1.5rem; }
+  .progress-fill { height: 100%; background: #1D9E75; border-radius: 2px; transition: width 0.4s ease; }
+  .q-counter { font-size: 13px; color: #5F5E5A; margin-bottom: 0.75rem; }
+  .question-card {
+    background: #fff;
+    border: 1px solid #d0e8e0;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .question-text { font-size: 17px; font-weight: 500; line-height: 1.7; }
+  .choices { display: flex; flex-direction: column; gap: 10px; margin-top: 1.25rem; }
+  .choice-btn {
+    background: #f5f7f5;
+    border: 1px solid #c0d8ce;
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    font-size: 15px;
+    font-family: inherit;
+    color: #1a1a1a;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .choice-btn:hover:not(:disabled) { background: #fff; border-color: #1D9E75; }
+  .choice-btn.correct { background: #E1F5EE; border-color: #1D9E75; color: #085041; font-weight: 500; }
+  .choice-btn.wrong { background: #FCEBEB; border-color: #E24B4A; color: #501313; }
+  .choice-btn:disabled { cursor: default; }
+  .feedback {
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.7;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.correct-fb { background: #E1F5EE; color: #085041; border: 1px solid #5DCAA5; }
+  .feedback.wrong-fb { background: #FCEBEB; color: #501313; border: 1px solid #F09595; }
+  .next-btn {
+    margin-top: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: #fff;
+    border: 1px solid #c0d8ce;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #1a1a1a;
+    cursor: pointer;
+    display: none;
+  }
+  .next-btn.show { display: inline-block; }
+  .next-btn:hover { background: #f5f7f5; border-color: #1D9E75; }
+  .result-card {
+    background: #fff;
+    border: 1px solid #d0e8e0;
+    border-radius: 12px;
+    padding: 2.5rem;
+    text-align: center;
+    display: none;
+  }
+  .result-card.show { display: block; }
+  .result-title { font-size: 16px; color: #5F5E5A; margin-bottom: 0.5rem; }
+  .result-score { font-size: 56px; font-weight: 500; color: #1D9E75; }
+  .result-pct { font-size: 14px; color: #5F5E5A; margin-top: 0.25rem; }
+  .result-msg { font-size: 16px; color: #1a1a1a; margin: 1.25rem 0; }
+  .retry-btn {
+    padding: 0.75rem 2rem;
+    background: #1D9E75;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #fff;
+    cursor: pointer;
+    margin-top: 0.5rem;
+  }
+  .retry-btn:hover { background: #0F6E56; }
+  @media (max-width: 480px) {
+    .question-text { font-size: 15px; }
+    .result-score { font-size: 44px; }
+  }
+</style>
+</head>
+<body>
+<div id="quiz-app">
+  <h1>一次関数のグラフ 2択クイズ</h1>
+  <div id="quiz-main">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <div class="q-counter" id="q-counter"></div>
+    <div class="question-card">
+      <div class="question-text" id="q-text"></div>
+      <div class="choices" id="choices"></div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+    <button class="next-btn" id="next-btn">次の問題 →</button>
+  </div>
+  <div class="result-card" id="result-card">
+    <div class="result-title">スコア</div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-pct" id="result-pct"></div>
+    <div class="result-msg" id="result-msg"></div>
+    <button class="retry-btn" id="retry-btn">もう一度チャレンジ</button>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {q:"y = 2x + 3 のグラフを書くとき、一番最初に注目すべき点はどこ？",choices:["y = 3 の地点","変化の割合（傾き）である2"],correct:0,fb_correct:"正解！ 切片（b）はグラフのスタート地点なので、まず y 軸上の 3 を取ります。ここを基準にして、傾きを使って次の点を決めていきます。",fb_wrong:"まず y 切片を取って、そこから傾きを使いましょう。"},
+  {q:"y = 3x − 4 のグラフで、スタート地点となる y 軸上の点はどこ？",choices:["−4 の地点","4 の地点"],correct:0,fb_correct:"正解！ 切片がマイナスのときは、原点より下の位置からスタートします。",fb_wrong:"符号を間違えないようにしましょう。マイナスなら下へ行きます。"},
+  {q:"y = 2x + 1 のグラフで、傾きが「プラス」のとき、x が 1 増えると y はどうなる？",choices:["上に 2 動く","下に 2 動く"],correct:0,fb_correct:"正解！ 傾きがプラスなら右上がりになるので、上へ移動します。",fb_wrong:"下に動くのは、傾きがマイナスのときです。"},
+  {q:"y = −2x + 5 のグラフで、傾きが「マイナス」のとき、x が 1 増えると y はどうなる？",choices:["下に 2 動く","上に 2 動く"],correct:0,fb_correct:"正解！ 傾きがマイナスなら右下がりになるので、下へ移動します。",fb_wrong:"符号を確認しましょう。マイナスの傾きは下方向です。"},
+  {q:"y = 3x + 2 のグラフで、y 切片から右に 1、上に 3 動いた点は正しい次の点？",choices:["はい、正しい","いいえ、違う"],correct:0,fb_correct:"正解！ 傾き = 3 は「x が 1 増えると y が 3 増える」という意味なので、右 1・上 3 で合っています。",fb_wrong:"傾きの意味を確認しましょう。傾き 3 → 右 1・上 3 です。"},
+  {q:"y = x + 2 のグラフで、傾きはいくつ？",choices:["1","2"],correct:0,fb_correct:"正解！ y = x のときの係数は 1 です。「x」だけで書かれているときは係数 1 と覚えましょう。",fb_wrong:"2 は y 切片です。傾きは x の係数 = 1 です。"},
+  {q:"傾きが同じ 2 本のグラフは、どんな関係になる？",choices:["平行になる","交わる"],correct:0,fb_correct:"正解！ 傾きが同じで切片が違えば、グラフは平行（交わらない）になります。",fb_wrong:"傾きが同じ → 同じ向きに進む → 平行です。"},
+  {q:"グラフが原点（0, 0）を通るのは、式がどのような形のとき？",choices:["y = ax の形（切片がゼロ）","y = ax + b の形（b ≠ 0）"],correct:0,fb_correct:"正解！ y = ax の形は切片が 0 なので、必ず原点を通ります。",fb_wrong:"切片 b があると、原点からずれてしまいます。"},
+  {q:"y = −x + 4 のグラフで、傾きが書いていない（文字だけ）ときの動き方は？",choices:["右に 1 進んで、下に 1 動く","右に 1 進んで、上に 4 動く"],correct:0,fb_correct:"正解！ −x は「−1x」のことなので、傾きは −1 として扱います。",fb_wrong:"4 はスタート地点（切片）であり、動き方ではありません。"},
+  {q:"書き終わったあと、自分のグラフが合っているか確認する一番良い方法は？",choices:["別の x の値を式に入れて、計算結果の y とグラフの点が重なるか見る","グラフの見た目がきれいかどうか見る"],correct:0,fb_correct:"正解！ 計算とグラフが一致すれば、そのグラフは確実に合っています。",fb_wrong:"見た目だけでは、傾きが少しズレていても気づけません。"}
+];
+
+let order = [], current = 0, score = 0, answered = false;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startQuiz() {
+  order = shuffle(questions.map((_, i) => i));
+  current = 0; score = 0;
+  document.getElementById('result-card').classList.remove('show');
+  document.getElementById('quiz-main').style.display = '';
+  showQuestion();
+}
+
+function showQuestion() {
+  answered = false;
+  const q = questions[order[current]];
+  const total = questions.length;
+  document.getElementById('progress').style.width = ((current / total) * 100) + '%';
+  document.getElementById('q-counter').textContent = `問題 ${current + 1} / ${total}`;
+  document.getElementById('q-text').textContent = q.q;
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  const shuffled = shuffle(q.choices.map((c, i) => ({text: c, idx: i})));
+  shuffled.forEach(({text, idx}) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = text;
+    btn.onclick = () => selectAnswer(idx, q, btn, choicesEl);
+    choicesEl.appendChild(btn);
+  });
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('next-btn').className = 'next-btn';
+}
+
+function selectAnswer(idx, q, btn, choicesEl) {
+  if (answered) return;
+  answered = true;
+  const isCorrect = idx === q.correct;
+  if (isCorrect) score++;
+  Array.from(choicesEl.children).forEach(b => {
+    b.disabled = true;
+    const i = q.choices.indexOf(b.textContent);
+    if (i === q.correct) b.classList.add('correct');
+    else if (b === btn && !isCorrect) b.classList.add('wrong');
+  });
+  const fb = document.getElementById('feedback');
+  fb.textContent = isCorrect ? q.fb_correct : q.fb_wrong;
+  fb.className = 'feedback show ' + (isCorrect ? 'correct-fb' : 'wrong-fb');
+  document.getElementById('next-btn').className = 'next-btn show';
+}
+
+document.getElementById('next-btn').onclick = () => {
+  current++;
+  if (current >= questions.length) showResult();
+  else showQuestion();
+};
+
+function showResult() {
+  document.getElementById('quiz-main').style.display = 'none';
+  const pct = Math.round((score / questions.length) * 100);
+  document.getElementById('result-score').textContent = `${score} / ${questions.length}`;
+  document.getElementById('result-pct').textContent = `正解率 ${pct}%`;
+  const msg = pct === 100 ? '全問正解！完璧です！' : pct >= 70 ? 'よくできました！もう少しで完璧です。' : 'もう一度チャレンジしてみましょう！';
+  document.getElementById('result-msg').textContent = msg;
+  document.getElementById('result-card').classList.add('show');
+}
+
+document.getElementById('retry-btn').onclick = startQuiz;
+startQuiz();
+</script>
+</body>
+</html>
