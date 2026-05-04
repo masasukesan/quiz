@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>加法・減法 2択クイズ</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'メイリオ', sans-serif;
+    background: #f5f7f5;
+    color: #1a1a1a;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+  #quiz-app { width: 100%; max-width: 620px; }
+  h1 { font-size: 20px; font-weight: 500; color: #085041; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid #1D9E75; }
+  .progress-bar { height: 4px; background: #d0e8e0; border-radius: 2px; margin-bottom: 1.5rem; }
+  .progress-fill { height: 100%; background: #1D9E75; border-radius: 2px; transition: width 0.4s ease; }
+  .q-counter { font-size: 13px; color: #5F5E5A; margin-bottom: 0.75rem; }
+  .question-card { background: #fff; border: 1px solid #d0e8e0; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+  .question-text { font-size: 17px; font-weight: 500; line-height: 1.7; }
+  .choices { display: flex; flex-direction: column; gap: 10px; margin-top: 1.25rem; }
+  .choice-btn { background: #f5f7f5; border: 1px solid #c0d8ce; border-radius: 8px; padding: 0.85rem 1rem; font-size: 15px; font-family: inherit; color: #1a1a1a; cursor: pointer; text-align: left; transition: background 0.15s, border-color 0.15s; }
+  .choice-btn:hover:not(:disabled) { background: #fff; border-color: #1D9E75; }
+  .choice-btn.correct { background: #E1F5EE; border-color: #1D9E75; color: #085041; font-weight: 500; }
+  .choice-btn.wrong { background: #FCEBEB; border-color: #E24B4A; color: #501313; }
+  .choice-btn:disabled { cursor: default; }
+  .feedback { margin-top: 1rem; padding: 0.85rem 1rem; border-radius: 8px; font-size: 14px; line-height: 1.7; display: none; }
+  .feedback.show { display: block; }
+  .feedback.correct-fb { background: #E1F5EE; color: #085041; border: 1px solid #5DCAA5; }
+  .feedback.wrong-fb { background: #FCEBEB; color: #501313; border: 1px solid #F09595; }
+  .next-btn { margin-top: 1rem; padding: 0.75rem 1.5rem; background: #fff; border: 1px solid #c0d8ce; border-radius: 8px; font-size: 15px; font-family: inherit; color: #1a1a1a; cursor: pointer; display: none; }
+  .next-btn.show { display: inline-block; }
+  .next-btn:hover { background: #f5f7f5; border-color: #1D9E75; }
+  .result-card { background: #fff; border: 1px solid #d0e8e0; border-radius: 12px; padding: 2.5rem; text-align: center; display: none; }
+  .result-card.show { display: block; }
+  .result-title { font-size: 16px; color: #5F5E5A; margin-bottom: 0.5rem; }
+  .result-score { font-size: 56px; font-weight: 500; color: #1D9E75; }
+  .result-pct { font-size: 14px; color: #5F5E5A; margin-top: 0.25rem; }
+  .result-msg { font-size: 16px; color: #1a1a1a; margin: 1.25rem 0; }
+  .retry-btn { padding: 0.75rem 2rem; background: #1D9E75; border: none; border-radius: 8px; font-size: 15px; font-family: inherit; color: #fff; cursor: pointer; }
+  .retry-btn:hover { background: #0F6E56; }
+  @media (max-width: 480px) { .question-text { font-size: 15px; } .result-score { font-size: 44px; } }
+</style>
+</head>
+<body>
+<div id="quiz-app">
+  <h1>加法・減法 2択クイズ</h1>
+  <div id="quiz-main">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <div class="q-counter" id="q-counter"></div>
+    <div class="question-card">
+      <div class="question-text" id="q-text"></div>
+      <div class="choices" id="choices"></div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+    <button class="next-btn" id="next-btn">次の問題 →</button>
+  </div>
+  <div class="result-card" id="result-card">
+    <div class="result-title">スコア</div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-pct" id="result-pct"></div>
+    <div class="result-msg" id="result-msg"></div>
+    <button class="retry-btn" id="retry-btn">もう一度チャレンジ</button>
+  </div>
+</div>
+<script>
+const questions = [
+  {q:"5 + (-8) の計算。頭の中でまず考えるべきことは？",choices:["5から8減るから、答えはマイナスのエリア（左側）に行く","8 - 5 を計算して、大きい方の符号をつける"],correct:0,fb_correct:"「0から右に5行って、左に8戻る」という数直線のイメージが大切です。",fb_wrong:"それは計算の「手順」です。まずは数直線で位置をイメージしましょう！"},
+  {q:"(-3) + (-4) の正しい解釈は？",choices:["3減って、さらに4減る","3と4を足して、マイナスをつける"],correct:0,fb_correct:"「マイナスの方向へ進み続ける」という動きを理解しましょう。",fb_wrong:"符号を機械的に処理するのではなく、動きとしてイメージしましょう。"},
+  {q:"(-2) - (+5) の「最初の一手」はどうする？",choices:["－2－5 と整理する","2 + 5 を計算する"],correct:0,fb_correct:"引き算を「負の数の足し算」として整理するのがミスを減らすコツです。",fb_wrong:"「5増えることの逆」は「5減ること」です。引き算を足し算に変換しましょう。"},
+  {q:"(-6) - (-9) の計算。正しい途中式はどっち？",choices:["-6 + 9","-6 - 9"],correct:0,fb_correct:"「逆の逆はプラス」。-(-9) は +9 になります。",fb_wrong:"「9減る（マイナス）」の「逆（マイナス）」だから「9増える（プラス）」に変わります。"},
+  {q:"2 - 7 + 4 - 8 のような長い式のとき、どんな工夫をするとよい？",choices:["(+2 + 4) + (-7 - 8) のように、正の組と負の組に分ける","左から順番に一つずつ計算していく"],correct:0,fb_correct:"プラスの合計とマイナスの合計を分けてから合わせるのが最も安全です。",fb_wrong:"数学は「工夫」が大事。グループ分けすると計算ミスが減ります。"},
+  {q:"0 - (-5) の計算結果はどうなる？",choices:["+5","-5"],correct:0,fb_correct:"「5減る」状態を「取り消す」のだから、結果として5増えます。",fb_wrong:"「5減る」という状態を「取り消す（マイナス）」と、5増えたことになります。"},
+  {q:"分数の計算 (-1/2) + (-1/3) で最初にやることは？",choices:["符号が同じ（左に進み続ける）ことを確認して通分","1/2 + 1/3 をして、最後にマイナスをつける"],correct:0,fb_correct:"分数になってもルールは同じ。まず符号を確認してから通分します。",fb_wrong:"分数になってもルールは同じ。共通の分母で「どれだけ左に進むか」を考えます。"},
+  {q:"(-1.2) + (+0.8) の答えの符号はどっちになる？",choices:["マイナス","プラス"],correct:0,fb_correct:"絶対値を比べると1.2 > 0.8なので、マイナス側が勝ちます。",fb_wrong:"絶対値（0からの距離）を比べます。左に1.2行く方が長いので、答えはマイナスです。"},
+  {q:"「正の数を引く」ことと「同じ意味」なのはどっち？",choices:["負の数を足す","負の数を引く"],correct:0,fb_correct:"「3増えるのをやめる」＝「3減るのを足す」、どちらも結果は同じです。",fb_wrong:"「3増えるのをやめる」のと「3減るのを足す」のは、どちらも結果として「3減る」ことになります。"},
+  {q:"計算が終わったあと、必ず確認すべきことは？",choices:["答えの「符号」が、数直線のイメージと合っているか","計算ミスがないかもう一度解き直す"],correct:0,fb_correct:"まず符号チェック。「左にいっぱい行ったのに答えがプラス？」はおかしいと気づけます。",fb_wrong:"解き直しも大事ですが、まず「符号が数直線のイメージと合っているか」を確認しましょう。"}
+];
+
+let order=[],current=0,score=0,answered=false;
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function startQuiz(){order=shuffle(questions.map((_,i)=>i));current=0;score=0;document.getElementById('result-card').classList.remove('show');document.getElementById('quiz-main').style.display='';showQuestion();}
+function showQuestion(){answered=false;const q=questions[order[current]];const total=questions.length;document.getElementById('progress').style.width=((current/total)*100)+'%';document.getElementById('q-counter').textContent=`問題 ${current+1} / ${total}`;document.getElementById('q-text').textContent=q.q;const choicesEl=document.getElementById('choices');choicesEl.innerHTML='';const shuffled=shuffle(q.choices.map((c,i)=>({text:c,idx:i})));shuffled.forEach(({text,idx})=>{const btn=document.createElement('button');btn.className='choice-btn';btn.textContent=text;btn.onclick=()=>selectAnswer(idx,q,btn,choicesEl);choicesEl.appendChild(btn);});document.getElementById('feedback').className='feedback';document.getElementById('feedback').textContent='';document.getElementById('next-btn').className='next-btn';}
+function selectAnswer(idx,q,btn,choicesEl){if(answered)return;answered=true;const isCorrect=idx===q.correct;if(isCorrect)score++;Array.from(choicesEl.children).forEach(b=>{b.disabled=true;const i=q.choices.indexOf(b.textContent);if(i===q.correct)b.classList.add('correct');else if(b===btn&&!isCorrect)b.classList.add('wrong');});const fb=document.getElementById('feedback');fb.textContent=isCorrect?q.fb_correct:q.fb_wrong;fb.className='feedback show '+(isCorrect?'correct-fb':'wrong-fb');document.getElementById('next-btn').className='next-btn show';}
+document.getElementById('next-btn').onclick=()=>{current++;if(current>=questions.length)showResult();else showQuestion();};
+function showResult(){document.getElementById('quiz-main').style.display='none';const pct=Math.round((score/questions.length)*100);document.getElementById('result-score').textContent=`${score} / ${questions.length}`;document.getElementById('result-pct').textContent=`正解率 ${pct}%`;const msg=pct===100?'全問正解！完璧です！':pct>=70?'よくできました！もう少しで完璧です。':'もう一度チャレンジしてみましょう！';document.getElementById('result-msg').textContent=msg;document.getElementById('result-card').classList.add('show');}
+document.getElementById('retry-btn').onclick=startQuiz;
+startQuiz();
+</script>
+</body>
+</html>
